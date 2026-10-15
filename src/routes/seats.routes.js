@@ -1,7 +1,13 @@
+
 const express = require("express");
 const pool = require("../config/db");
 
 const router = express.Router();
+
+// Derive floor from numeric seat labels:
+// 101–200 = Floor 1
+// 201–300 = Floor 2
+// 301–400 = Floor 3
 
 // GET /api/seats
 router.get("/", async (req, res) => {
@@ -10,6 +16,18 @@ router.get("/", async (req, res) => {
       `SELECT
          s.id,
          s.seat_number,
+         CASE
+           WHEN s.seat_number ~ '^[0-9]{3}$'
+             AND CAST(s.seat_number AS INTEGER) BETWEEN 101 AND 200
+             THEN 1
+           WHEN s.seat_number ~ '^[0-9]{3}$'
+             AND CAST(s.seat_number AS INTEGER) BETWEEN 201 AND 300
+             THEN 2
+           WHEN s.seat_number ~ '^[0-9]{3}$'
+             AND CAST(s.seat_number AS INTEGER) BETWEEN 301 AND 400
+             THEN 3
+           ELSE NULL
+         END AS floor,
          NOT EXISTS (
            SELECT 1
            FROM bookings b
@@ -17,7 +35,25 @@ router.get("/", async (req, res) => {
              AND b.status = 'confirmed'
          ) AS is_available
        FROM seats s
-       ORDER BY s.id`
+       ORDER BY
+         CASE
+           WHEN s.seat_number ~ '^[0-9]{3}$'
+             AND CAST(s.seat_number AS INTEGER) BETWEEN 101 AND 200
+             THEN 1
+           WHEN s.seat_number ~ '^[0-9]{3}$'
+             AND CAST(s.seat_number AS INTEGER) BETWEEN 201 AND 300
+             THEN 2
+           WHEN s.seat_number ~ '^[0-9]{3}$'
+             AND CAST(s.seat_number AS INTEGER) BETWEEN 301 AND 400
+             THEN 3
+           ELSE 4
+         END,
+         CASE
+           WHEN s.seat_number ~ '^[0-9]{3}$'
+             THEN CAST(s.seat_number AS INTEGER)
+           ELSE NULL
+         END,
+         s.seat_number`
     );
 
     return res.status(200).json(result.rows);
@@ -45,6 +81,18 @@ router.get("/:id", async (req, res) => {
       `SELECT
          s.id,
          s.seat_number,
+         CASE
+           WHEN s.seat_number ~ '^[0-9]{3}$'
+             AND CAST(s.seat_number AS INTEGER) BETWEEN 101 AND 200
+             THEN 1
+           WHEN s.seat_number ~ '^[0-9]{3}$'
+             AND CAST(s.seat_number AS INTEGER) BETWEEN 201 AND 300
+             THEN 2
+           WHEN s.seat_number ~ '^[0-9]{3}$'
+             AND CAST(s.seat_number AS INTEGER) BETWEEN 301 AND 400
+             THEN 3
+           ELSE NULL
+         END AS floor,
          NOT EXISTS (
            SELECT 1
            FROM bookings b
